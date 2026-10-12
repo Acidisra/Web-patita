@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patita de Perro - Todo para tu mascota</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        @keyframes scroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-scroll {
+            display: flex;
+            width: max-content;
+            animation: scroll 35s linear infinite;
+        }
+        .animate-scroll:hover {
+            animation-play-state: paused;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col justify-between" x-data="storeApp()">
+
+    <!-- Notification Toast -->
+    <div x-show="notification" x-transition class="fixed bottom-5 right-5 z-50 bg-emerald-600 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 border border-emerald-500/30">
+        <i class="fa-solid fa-circle-check text-xl"></i>
+        <span x-text="notification" class="font-medium text-sm"></span>
+    </div>
+
+    <div>
+        <!-- Navbar Header -->
+        <header class="bg-slate-900 text-white sticky top-0 z-40 shadow-xl border-b border-slate-800">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3 cursor-pointer" @click="currentView = 'catalog'">
+                    <img src="165809.png" alt="Logo Patita de Perro" class="w-12 h-12 rounded-full object-cover border-2 border-amber-400 shadow-md">
+                    <div>
+                        <h1 class="text-lg md:text-xl font-black tracking-wide uppercase text-amber-400">Patita de Perro</h1>
+                        <p class="text-xs text-slate-300 font-medium">Todo para tu mascota</p>
+                    </div>
+                </div>
+
+                <div class="hidden md:flex flex-1 max-w-md relative">
+                    <input type="text" x-model="searchQuery" placeholder="Buscar alimentos, accesorios, jaulas..." class="w-full bg-slate-800 text-white text-sm px-4 py-2 pl-10 rounded-xl border border-slate-700 focus:outline-none focus:border-amber-400 transition">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <template x-if="!currentUser">
+                        <button @click="isLoginOpen = true" class="bg-slate-800 hover:bg-slate-700 text-amber-400 px-3.5 py-2 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 border border-slate-700 transition">
+                            <i class="fa-solid fa-user"></i>
+                            <span class="hidden sm:inline">Iniciar Sesión</span>
+                        </button>
+                    </template>
+                    <template x-if="currentUser">
+                        <div class="flex items-center gap-2 bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700">
+                            <div class="text-right hidden sm:block">
+                                <p class="text-xs font-bold text-amber-400" x-text="currentUser.name"></p>
+                                <p class="text-[10px] text-slate-400 uppercase font-semibold" x-text="currentUser.role === 'admin' ? 'Administrador' : 'Cliente'"></p>
+                            </div>
+                            <button @click="currentView = currentUser.role === 'admin' ? 'admin' : 'profile'" class="bg-amber-500 hover:bg-amber-600 text-slate-900 px-2.5 py-1.5 rounded-lg text-xs font-bold transition">
+                                <i :class="currentUser.role === 'admin' ? 'fa-solid fa-gauge' : 'fa-solid fa-box'"></i>
+                            </button>
+                            <button @click="logout()" class="text-slate-400 hover:text-rose-400 p-1.5" title="Cerrar sesión">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                            </button>
+                        </div>
+                    </template>
+
+                    <button @click="isCartOpen = true" class="relative bg-amber-500 hover:bg-amber-600 text-slate-900 px-4 py-2 rounded-xl font-bold flex items-center gap-2 transition shadow-lg">
+                        <i class="fa-solid fa-cart-shopping"></i>
+                        <span class="hidden sm:inline">Carrito</span>
+                        <span class="absolute -top-2 -right-2 bg-rose-600 text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold shadow" x-text="cartCount()">0</span>
+                    </button>
+                </div>
+            </div>
+            <div class="px-4 pb-3 md:hidden">
+                <div class="relative">
+                    <input type="text" x-model="searchQuery" placeholder="Buscar productos..." class="w-full bg-slate-800 text-white text-sm px-4 py-2 pl-10 rounded-xl border border-slate-700 focus:outline-none focus:border-amber-400">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN VIEW ROUTER -->
+        <main>
+            <!-- CATALOG VIEW -->
+            <template x-if="currentView === 'catalog'">
+                <div>
+                    <section class="bg-gradient-to-br from-slate-900 via-slate-800 to-amber-950 text-white py-12 overflow-hidden relative border-b border-slate-800">
+                        <div class="max-w-7xl mx-auto px-4 text-center mb-8">
+                            <span class="bg-amber-500/20 text-amber-400 text-xs font-bold px-3.5 py-1 rounded-full uppercase tracking-widest border border-amber-500/30">Galería Destacada Patita de Perro</span>
+                            <h2 class="text-3xl md:text-5xl font-black mt-3 mb-2">Todo lo que tu mascota necesita</h2>
+                            <p class="text-slate-300 max-w-2xl mx-auto text-sm">Explora las novedades de nuestras 7 imágenes principales y selecciona la que prefieras para ver sus detalles.</p>
+                        </div>
+
+                        <div class="relative w-full overflow-hidden py-4">
+                            <div class="animate-scroll flex gap-6 px-4">
+                                <template x-for="item in carouselItems" :key="item.id">
+                                    <div @click="selectCarouselItem(item)" class="w-72 md:w-80 bg-slate-800/90 backdrop-blur rounded-2xl overflow-hidden shadow-2xl border border-slate-700 shrink-0 cursor-pointer transform hover:-translate-y-2 transition duration-300 group">
+                                        <div class="h-52 overflow-hidden relative">
+                                            <img :src="item.image" :alt="item.title" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent"></div>
+                                            <span class="absolute top-3 left-3 bg-amber-500 text-slate-900 text-xs font-black px-2.5 py-1 rounded-lg uppercase shadow" x-text="item.tag"></span>
+                                        </div>
+                                        <div class="p-4">
+                                            <h3 class="font-bold text-base text-white group-hover:text-amber-400 transition" x-text="item.title"></h3>
+                                            <p class="text-slate-400 text-xs mt-1 line-clamp-2" x-text="item.desc"></p>
+                                            <div class="mt-3 flex items-center justify-between">
+                                                <span class="text-amber-400 font-black text-sm" x-text="`$${item.price} MXN`"></span>
+                                                <span class="text-xs bg-slate-700 hover:bg-amber-500 hover:text-slate-900 text-slate-200 px-3 py-1 rounded-lg font-bold transition">Ver Producto</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="bg-white shadow-sm border-b border-slate-200 sticky top-16 md:top-[73px] z-30">
+                        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                            <button @click="selectedCategory = 'Todos'" :class="selectedCategory === 'Todos' ? 'bg-amber-500 text-slate-900 shadow-md' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'" class="px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition">
+                                <i class="fa-solid fa-border-all mr-1.5"></i> Todos
+                            </button>
+                            <template x-for="cat in categories" :key="cat">
+                                <button @click="selectedCategory = cat" :class="selectedCategory === cat ? 'bg-amber-500 text-slate-900 shadow-md' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'" class="px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition uppercase" x-text="cat"></button>
+                            </template>
+                        </div>
+                    </section>
+
+                    <section class="max-w-7xl mx-auto px-4 py-10">
+                        <div class="flex items-center justify-between mb-6">
+                            <div>
+                                <h3 class="text-2xl font-black text-slate-900" x-text="selectedCategory === 'Todos' ? 'Catálogo General' : `Categoría: ${selectedCategory}`"></h3>
+                                <p class="text-slate-500 text-xs mt-0.5">Artículos de calidad garantizada para consentir a tu compañero.</p>
+                            </div>
+                            <div class="text-xs font-bold text-slate-500" x-text="`${filteredProducts().length} productos encontrados`"></div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <template x-for="product in filteredProducts()" :key="product.id">
+                                <div class="bg-white rounded-2xl shadow-md overflow-hidden border border-slate-200 flex flex-col justify-between hover:shadow-xl transition duration-300">
+                                    <div>
+                                        <div class="h-52 overflow-hidden bg-slate-100 relative">
+                                            <img :src="product.image" :alt="product.name" class="w-full h-full object-cover hover:scale-105 transition duration-300">
+                                            <span class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur text-amber-400 text-xs font-bold px-2.5 py-1 rounded-lg uppercase" x-text="product.category"></span>
+                                        </div>
+                                        <div class="p-4">
+                                            <h4 class="font-bold text-base text-slate-900 line-clamp-1" x-text="product.name"></h4>
+                                            <p class="text-slate-500 text-xs mt-1 line-clamp-2" x-text="product.desc"></p>
+                                        </div>
+                                    </div>
+                                    <div class="p-4 pt-0 flex items-center justify-between border-t border-slate-100 mt-2 pt-3">
+                                        <span class="text-lg font-black text-amber-600" x-text="`$${product.price} MXN`"></span>
+                                        <button @click="addToCart(product)" class="bg-slate-900 hover:bg-amber-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow">
+                                            <i class="fa-solid fa-cart-plus"></i> Agregar
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </section>
+                </div>
+            </template>
+
+            <!-- PROFILE VIEW -->
+            <template x-if="currentView === 'profile'">
+                <div class="max-w-4xl mx-auto px-4 py-10">
+                    <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden p-6 md:p-8">
+                        <div class="flex items-center justify-between border-b border-slate-200 pb-6 mb-6">
+                            <div class="flex items-center gap-4">
+                                <div class="w-14 h-14 bg-amber-500 text-slate-900 rounded-2xl flex items-center justify-center font-black text-2xl shadow">
+                                    <i class="fa-solid fa-user"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-2xl font-black text-slate-900" x-text="currentUser?.name"></h2>
+                                    <p class="text-xs text-slate-500" x-text="currentUser?.email"></p>
+                                </div>
+                            </div>
+                            <button @click="currentView = 'catalog'" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition">
+                                <i class="fa-solid fa-arrow-left mr-1"></i> Volver a la Tienda
+                            </button>
+                        </div>
+
+                        <h3 class="text-lg font-black text-slate-900 mb-4 flex items-center gap-2">
+                            <i class="fa-solid fa-box-archive text-amber-500"></i> Historial y Seguimiento de Pedidos
+                        </h3>
+
+                        <div class="space-y-4">
+                            <template x-for="order in userOrders()" :key="order.id">
+                                <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200">
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3 mb-3">
+                                        <div>
+                                            <span class="font-black text-slate-900" x-text="`Pedido #${order.id}`"></span>
+                                            <span class="text-xs text-slate-500 ml-2" x-text="order.date"></span>
+                                        </div>
+                                        <span class="px-3 py-1 rounded-full text-xs font-bold w-fit bg-amber-100 text-amber-800" x-text="order.status"></span>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <template x-for="item in order.items">
+                                            <div class="flex justify-between text-xs text-slate-600">
+                                                <span x-text="`${item.qty}x ${item.name}`"></span>
+                                                <span class="font-bold" x-text="`$${item.price * item.qty} MXN`"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <div class="border-t border-slate-200 mt-3 pt-3 flex justify-between items-center">
+                                        <span class="text-xs font-bold text-slate-500">Total pagado:</span>
+                                        <span class="text-base font-black text-amber-600" x-text="`$${order.total} MXN`"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- ADMIN VIEW -->
+            <template x-if="currentView === 'admin'">
+                <div class="max-w-7xl mx-auto px-4 py-10" x-data="{ adminTab: 'products' }">
+                    <div class="bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden p-6 md:p-8">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-6 mb-6 gap-4">
+                            <div>
+                                <span class="bg-amber-500 text-slate-900 text-xs font-black px-3 py-1 rounded-full uppercase">Panel de Control</span>
+                                <h2 class="text-2xl font-black text-slate-900 mt-1">Administración de Patita de Perro</h2>
+                            </div>
+                            <button @click="currentView = 'catalog'" class="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition">
+                                <i class="fa-solid fa-store mr-1"></i> Ver Tienda
+                            </button>
+                        </div>
+
+                        <div class="flex gap-2 border-b border-slate-200 pb-4 mb-6">
+                            <button @click="adminTab = 'products'" :class="adminTab === 'products' ? 'bg-slate-900 text-amber-400 shadow' : 'bg-slate-100 text-slate-600'" class="px-4 py-2.5 rounded-xl text-xs font-bold transition">Productos y Precios</button>
+                            <button @click="adminTab = 'carousel'" :class="adminTab === 'carousel' ? 'bg-slate-900 text-amber-400 shadow' : 'bg-slate-100 text-slate-600'" class="px-4 py-2.5 rounded-xl text-xs font-bold transition">Carrusel (7 Imágenes)</button>
+                            <button @click="adminTab = 'orders'" :class="adminTab === 'orders' ? 'bg-slate-900 text-amber-400 shadow' : 'bg-slate-100 text-slate-600'" class="px-4 py-2.5 rounded-xl text-xs font-bold transition">Pedidos</button>
+                        </div>
+
+                        <div x-show="adminTab === 'products'">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-black text-slate-900">Listado de Productos</h3>
+                                <button @click="openNewProductModal()" class="bg-emerald-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold">Nuevo Producto</button>
+                            </div>
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-100 text-xs uppercase font-black">
+                                    <tr>
+                                        <th class="p-3">Imagen</th><th class="p-3">Nombre</th><th class="p-3">Categoría</th><th class="p-3">Precio</th><th class="p-3 text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200">
+                                    <template x-for="p in products" :key="p.id">
+                                        <tr>
+                                            <td class="p-3"><img :src="p.image" class="w-12 h-12 rounded-lg object-cover"></td>
+                                            <td class="p-3 font-bold" x-text="p.name"></td>
+                                            <td class="p-3" x-text="p.category"></td>
+                                            <td class="p-3"><input type="number" x-model.number="p.price" @change="saveData()" class="w-28 bg-slate-50 border px-3 py-1 rounded-lg font-bold text-amber-600"></td>
+                                            <td class="p-3 text-right"><button @click="deleteProduct(p.id)" class="text-rose-500"><i class="fa-solid fa-trash"></i></button></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div x-show="adminTab === 'carousel'">
+                            <h3 class="text-lg font-black text-slate-900 mb-4">Editar Carrusel Principal</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <template x-for="item in carouselItems" :key="item.id">
+                                    <div class="bg-slate-50 rounded-2xl p-4 border flex gap-4 items-center">
+                                        <img :src="item.image" class="w-20 h-20 rounded-xl object-cover shrink-0">
+                                        <div class="flex-1 space-y-2">
+                                            <input type="text" x-model="item.title" @input="saveData()" class="w-full bg-white border text-xs px-3 py-1 rounded-lg font-bold">
+                                            <input type="number" x-model.number="item.price" @input="saveData()" class="w-full bg-white border text-xs px-3 py-1 rounded-lg font-bold">
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div x-show="adminTab === 'orders'">
+                            <h3 class="text-lg font-black text-slate-900 mb-4">Pedidos Registrados</h3>
+                            <div class="space-y-4">
+                                <template x-for="order in allOrders" :key="order.id">
+                                    <div class="bg-slate-50 rounded-2xl p-4 border flex justify-between items-center">
+                                        <div>
+                                            <span class="font-black" x-text="`Pedido #${order.id} - ${order.customerName}`"></span>
+                                            <p class="text-xs text-slate-500" x-text="`Total: $${order.total} MXN`"></p>
+                                        </div>
+                                        <select x-model="order.status" @change="saveData()" class="bg-white border text-xs font-bold px-3 py-2 rounded-xl">
+                                            <option value="Pendiente">Pendiente</option>
+                                            <option value="En Camino">En Camino</option>
+                                            <option value="Entregado">Entregado</option>
+                                        </select>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </main>
+    </div>
+
+    <!-- CART DRAWER -->
+    <div x-show="isCartOpen" class="fixed inset-0 z-50 overflow-hidden" style="display: none;">
+        <div @click="isCartOpen = false" class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"></div>
+        <div class="absolute inset-y-0 right-0 max-w-full flex">
+            <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col">
+                <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                    <h3 class="font-bold text-lg"><i class="fa-solid fa-cart-shopping text-amber-400"></i> Tu Carrito</h3>
+                    <button @click="isCartOpen = false" class="text-slate-400"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <template x-for="item in cart" :key="item.id">
+                        <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border">
+                            <div class="flex items-center gap-3">
+                                <img :src="item.image" class="w-12 h-12 object-cover rounded-lg">
+                                <div>
+                                    <h4 class="font-bold text-sm" x-text="item.name"></h4>
+                                    <p class="text-xs text-slate-500" x-text="`$${item.price} x ${item.qty}`"></p>
+                                </div>
+                            </div>
+                            <span class="font-black text-amber-600 text-sm" x-text="`$${item.price * item.qty}`"></span>
+                        </div>
+                    </template>
+                </div>
+                <div class="p-4 bg-slate-50 border-t space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="font-bold">Total:</span>
+                        <span class="text-2xl font-black text-slate-900" x-text="`$${cartTotal()} MXN`"></span>
+                    </div>
+                    <button @click="checkout()" class="w-full bg-emerald-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow">
+                        <i class="fa-brands fa-whatsapp text-xl"></i> Pedir por WhatsApp
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGIN MODAL -->
+    <div x-show="isLoginOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+        <div @click="isLoginOpen = false" class="fixed inset-0 bg-slate-900/60"></div>
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full relative z-10 p-6">
+            <h3 class="text-xl font-black text-slate-900 mb-4 text-center">Iniciar Sesión</h3>
+            <div class="space-y-4">
+                <input type="email" x-model="loginEmail" placeholder="admin@patita.com" class="w-full border px-4 py-2 rounded-xl text-sm">
+                <input type="password" x-model="loginPassword" placeholder="••••••••" class="w-full border px-4 py-2 rounded-xl text-sm">
+                <button @click="login()" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold">Ingresar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function storeApp() {
+            return {
+                currentView: 'catalog',
+                selectedCategory: 'Todos',
+                searchQuery: '',
+                isCartOpen: false,
+                isLoginOpen: false,
+                selectedItemModal: null,
+                notification: '',
+                currentUser: JSON.parse(localStorage.getItem('patita_user')) || null,
+                loginEmail: '',
+                loginPassword: '',
+
+                categories: ['Perros', 'Gatos', 'Acuario', 'Aves', 'Roedores', 'Reptiles', 'Varios'],
+
+                carouselItems: [
+                    { id: 1, title: 'Alimento Premium para Hámster Tropifit', price: 120, tag: 'Roedores', image: '167928.jpg', desc: 'Alimento premium con frutas, vegetales y hierbas.' },
+                    { id: 2, title: 'Alimento Chomik Hamster FOS+', price: 135, tag: 'Roedores', image: '167933.jpg', desc: 'Nutrición especializada para hámsters.' },
+                    { id: 3, title: 'Alimento Diario Sunny Dots Hamster', price: 110, tag: 'Roedores', image: '167930.jpg', desc: 'Dieta avanzada con semillas seleccionadas.' },
+                    { id: 4, title: 'Arena Aglutinante Alfa Cat 5kg', price: 180, tag: 'Gatos', image: '165826.jpg', desc: 'Hipoalergénica, libre de polvo.' },
+                    { id: 5, title: 'Jaulas Plegables Sunny Seguras', price: 850, tag: 'Perros', image: '167934.jpg', desc: 'Resistentes con charola sanitaria.' },
+                    { id: 6, title: 'Premios Nupec Variedades', price: 95, tag: 'Perros', image: '165829.jpg', desc: 'Cuidado dental y entrenamiento.' },
+                    { id: 7, title: 'NexGard Spectra Antiparasitario', price: 320, tag: 'Perros', image: '165831.jpg', desc: 'Protección integral contra parásitos.' }
+                ],
+
+                products: [
+                    { id: 101, name: 'Tropifit Hamster Premium 750g', price: 120, category: 'Roedores', image: '167928.jpg', desc: 'Alimento equilibrado.' },
+                    { id: 102, name: 'Arena Alfa Cat Aglutinante 5kg', price: 180, category: 'Gatos', image: '165826.jpg', desc: 'Control de olores.' },
+                    { id: 103, name: 'Jaula Plegable Sunny Mediana', price: 850, category: 'Perros', image: '167934.jpg', desc: 'Estructura metálica.' },
+                    { id: 104, name: 'Premios Nupec Dental Care', price: 95, category: 'Perros', image: '165829.jpg', desc: 'Cuidado dental.' },
+                    { id: 105, name: 'NexGard Spectra Perros', price: 320, category: 'Perros', image: '165831.jpg', desc: 'Antiparasitario.' },
+                    { id: 106, name: 'Filtro Interno para Acuario Flow', price: 450, category: 'Acuario', image: '165809.png', desc: 'Filtración potente.' },
+                    { id: 107, name: 'Alimento para Peces Hojuelas', price: 65, category: 'Acuario', image: '165809.png', desc: 'Peces tropicales.' },
+                    { id: 108, name: 'Mixtura Especial para Aves', price: 85, category: 'Aves', image: '165809.png', desc: 'Semillas seleccionadas.' },
+                    { id: 109, name: 'Sustrato de Coco para Reptiles', price: 140, category: 'Reptiles', image: '165809.png', desc: 'Mantiene humedad.' },
+                    { id: 110, name: 'Shampoo Multiusos Mascotas', price: 115, category: 'Varios', image: '165809.png', desc: 'Aroma duradero.' }
+                ],
+
+                cart: JSON.parse(localStorage.getItem('patita_cart')) || [],
+                allOrders: JSON.parse(localStorage.getItem('patita_orders')) || [
+                    { id: 1001, customerName: 'María López', email: 'cliente@patita.com', items: [{name: 'Tropifit Hamster', qty: 1, price: 120}], total: 120, status: 'En Camino', date: '12/10/2026' }
+                ],
+                isNewProductModalOpen: false,
+                newProd: { name: '', price: 150, category: 'Perros', image: '165809.png', desc: '' },
+
+                filteredProducts() {
+                    let result = this.products;
+                    if (this.selectedCategory !== 'Todos') {
+                        result = result.filter(p => p.category.toLowerCase() === this.selectedCategory.toLowerCase());
+                    }
+                    if (this.searchQuery.trim() !== '') {
+                        let q = this.searchQuery.toLowerCase();
+                        result = result.filter(p => p.name.toLowerCase().includes(q));
+                    }
+                    return result;
+                },
+
+                addToCart(product) {
+                    let existing = this.cart.find(item => item.id === product.id);
+                    if (existing) { existing.qty++; } else { this.cart.push({ ...product, qty: 1 }); }
+                    this.notification = `¡Agregado al carrito!`;
+                    setTimeout(() => this.notification = '', 2500);
+                },
+
+                cartCount() { return this.cart.reduce((a, b) => a + b.qty, 0); },
+                cartTotal() { return this.cart.reduce((a, b) => a + (b.price * b.qty), 0); },
+                selectCarouselItem(item) { alert(item.title + ' - $' + item.price + ' MXN'); },
+
+                checkout() {
+                    let msg = 'Hola Patita de Perro, quiero hacer un pedido:%0A';
+                    this.cart.forEach(i => { msg += `- ${i.qty}x ${i.name} ($${i.price * i.qty})%0A`; });
+                    window.open(`https://wa.me/5215556786334?text=${msg}`, '_blank');
+                },
+
+                login() {
+                    if (this.loginEmail.includes('admin')) {
+                        this.currentUser = { name: 'Administrador', email: 'admin@patita.com', role: 'admin' };
+                    } else {
+                        this.currentUser = { name: 'Cliente', email: 'cliente@patita.com', role: 'client' };
+                    }
+                    localStorage.setItem('patita_user', JSON.stringify(this.currentUser));
+                    this.isLoginOpen = false;
+                    this.notification = '¡Sesión iniciada!';
+                    setTimeout(() => this.notification = '', 2500);
+                },
+
+                logout() {
+                    this.currentUser = null;
+                    localStorage.removeItem('patita_user');
+                    this.currentView = 'catalog';
+                },
+
+                userOrders() {
+                    return this.currentUser ? this.allOrders.filter(o => o.email === this.currentUser.email) : [];
+                },
+
+                deleteProduct(id) {
+                    this.products = this.products.filter(p => p.id !== id);
+                },
+
+                openNewProductModal() {
+                    this.isNewProductModalOpen = true;
+                },
+
+                handleFileSelect(event) {
+                    let file = event.target.files[0];
+                    if (file) {
+                        this.newProd.image = file.name;
+                    }
+                },
+
+                saveNewProduct() {
+                    if (!this.newProd.name.trim()) {
+                        alert('Por favor ingresa un nombre para el producto.');
+                        return;
+                    }
+                    let p = {
+                        id: Date.now(),
+                        name: this.newProd.name,
+                        price: parseFloat(this.newProd.price) || 100,
+                        category: this.newProd.category,
+                        image: this.newProd.image || '165809.png',
+                        desc: this.newProd.desc || 'Artículo nuevo en tienda.'
+                    };
+                    this.products.unshift(p);
+                    this.saveData();
+                    this.isNewProductModalOpen = false;
+                    this.newProd = { name: '', price: 150, category: 'Perros', image: '165809.png', desc: '' };
+                    this.notification = '¡Producto agregado con éxito!';
+                    setTimeout(() => this.notification = '', 2500);
+                },
+
+                saveData() {
+                    localStorage.setItem('patita_products', JSON.stringify(this.products));
+                    localStorage.setItem('patita_carousel', JSON.stringify(this.carouselItems));
+                    localStorage.setItem('patita_cart', JSON.stringify(this.cart));
+                    localStorage.setItem('patita_orders', JSON.stringify(this.allOrders));
+                }
+            }
+        }
+    </script>
+
+    <!-- NEW PRODUCT MODAL (Admin) -->
+    <div x-show="isNewProductModalOpen" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="display: none;">
+        <div @click="isNewProductModalOpen = false" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+        <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full relative z-10 p-6 md:p-8 space-y-4">
+            <h3 class="text-xl font-black text-slate-900">Agregar Nuevo Producto</h3>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-1">Nombre del Producto</label>
+                    <input type="text" x-model="newProd.name" placeholder="Ej. Comida para Perro 3kg" class="w-full bg-slate-50 border px-3.5 py-2 rounded-xl text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Precio (MXN)</label>
+                        <input type="number" x-model.number="newProd.price" placeholder="250" class="w-full bg-slate-50 border px-3.5 py-2 rounded-xl text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-slate-700 block mb-1">Categoría</label>
+                        <select x-model="newProd.category" class="w-full bg-slate-50 border px-3 py-2 rounded-xl text-sm uppercase font-semibold">
+                            <template x-for="cat in categories" :key="cat">
+                                <option :value="cat" x-text="cat"></option>
+                            </template>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-1">Imagen (Archivo local o nombre/URL)</label>
+                    <input type="file" @change="handleFileSelect($event)" class="w-full bg-slate-50 border px-3 py-2 rounded-xl text-xs mb-2">
+                    <input type="text" x-model="newProd.image" placeholder="ej. 165809.png o URL" class="w-full bg-slate-50 border px-3.5 py-2 rounded-xl text-xs">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-slate-700 block mb-1">Descripción</label>
+                    <textarea x-model="newProd.desc" placeholder="Detalles del producto..." class="w-full bg-slate-50 border px-3.5 py-2 rounded-xl text-sm h-20"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+                <button @click="isNewProductModalOpen = false" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold">Cancelar</button>
+                <button @click="saveNewProduct()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-xs font-bold shadow">Guardar Producto</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
